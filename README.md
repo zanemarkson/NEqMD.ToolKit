@@ -95,6 +95,9 @@ It takes GROMACS geometry file (.gro file) to remove a shell of solvent molecule
 Rotates the entire configuration based on user's choice. This tool will align the (donor group COM)-to-(acceptor group COM) vector to +z axis and the (donor group COM)-to-(L shape atom) vector to xOz plane.
 
 
+## grodist: `g_grodist_d`
+This tool is a simpler version of GROMACS standard tool g_dist_d. It takes GROMACS .gro geometry file and an EIF and calculate the center-of-mass distances.
+
 # Credits
 
 All the C code are written by [Zheng Ma](https://github.com/zanemarkson/) and part of the Fortran code is contributed by [Dr. Peng Zhang](https://scholars.duke.edu/display/per8149892) as stated above. 
