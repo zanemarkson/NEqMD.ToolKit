@@ -22,6 +22,10 @@
 #define KBAU 3.1668107400994983e-06
 #endif
 
+#ifndef CM2HARTREE
+#define CM2HARTREE 1.000/219474.63
+#endif
+
 /*
 double hcPsi( int n , double xp , double w , double A )
 {
@@ -39,6 +43,65 @@ double gaussianDistribution( double sigma , double mu , double x )
 
 }
 */
+
+
+double wignerPositionNormalize( int n , double w , double ZPEscalingFactor )
+{
+  
+  double scaledOmega = ( n + 0.50 * ZPEscalingFactor ) / ( n + 0.50 ) * w ;
+  double leftCutOff = -1.00 * sqrt( ( 2.0 * n + 1.00 ) / scaledOmega );
+  int nstepOneSide = 1200 ;
+  int nsteps = 2 * nstepOneSide ;
+  double stepsize = -1.00 * leftCutOff / nstepOneSide ;
+  
+  int istep = 0 ;
+  double accumulatedP = 0.00 ;
+  double wavefunc = 0.00 ;
+  
+  //double scaledOmega = w ;
+  
+  for( istep = 0 ; istep < nsteps ; istep ++ )
+  {
+    wavefunc = hcPsi( n , ( leftCutOff + stepsize * istep ) * sqrt( scaledOmega ) , scaledOmega , 1.00 ) ;
+    accumulatedP = accumulatedP + stepsize * wavefunc * wavefunc ;
+    //printf("\n% 12.8f * % 12.8f * % 12.8f = % 12.8f\n" , stepsize , wavefunc , wavefunc , stepsize * wavefunc * wavefunc ) ;
+  }
+  
+  printf("\nAt level %d, vib-freq is % 12.8E, A is % 12.8E\n", n, w, 1.00 / accumulatedP ) ;
+  
+  
+  return( 1.00 / accumulatedP ) ;
+
+}
+
+double wignerVelocityNormalize( int n , double w , double ZPEscalingFactor )
+{
+  double scaledOmega = ( n + 0.50 * ZPEscalingFactor ) / ( n + 0.50 ) * w ;
+  double leftCutOff = -1.00 * sqrt( ( 2.0 * n + 1.0 ) * scaledOmega ) ;
+  int nstepOneSide = 1200 ;
+  int nsteps = 2 * nstepOneSide ;
+  double stepsize = -1.00 * leftCutOff / nstepOneSide ;
+  
+  
+  int istep = 0 ;
+  double accumulatedP = 0.00 ;
+  double wavefunc = 0.00 ;
+  
+  //double scaledOmega = w ;
+  
+  for( istep = 0 ; istep < nsteps ; istep ++ )
+  {
+    wavefunc = hcPsi( n , ( leftCutOff + stepsize * istep ) / sqrt( scaledOmega ) , scaledOmega , 1.00 ) ;
+    accumulatedP = accumulatedP + stepsize * wavefunc * wavefunc ;
+  }
+  
+  printf("\nAt level %d, vib-freq is % 12.8E, A is % 12.8E\n", n, w, 1.00 / accumulatedP ) ;
+  
+  return( 1.00 / accumulatedP ) ;
+
+}
+
+
 
 
 
@@ -73,7 +136,7 @@ double wignerVelocity( int n , double p , double w , double A )
 {
   double scaledOmega = w ;
   double leftCutOff = -1.00 * sqrt( ( 2.0 * n + 1.0 ) * scaledOmega ) ;
-  int nstepOneSide = 400 ;
+  int nstepOneSide = 1200 ;
   int nsteps = 2 * nstepOneSide ;
   double stepsize = -1.00 * leftCutOff / nstepOneSide ;
   
@@ -164,14 +227,14 @@ double canonicalVelocity( int n , double p , double w , double T , double A )
 
 
 
-double xiGenWigner( int n , double ZPEscalingFactor , double rd , double omega , double A , double * angle )
+double xiGenWigner( int n , double ZPEscalingFactor , double rd , double omega , double A , double * angle , int level_cutoff )
 {
   double xi ;
   double angle_local ;
   double p = rd / (double) IM ;
   double scaledOmega = 0.00 ;
   
-  if( n <= 2 )
+  if( n <= level_cutoff )
   {
     scaledOmega = ( n + 0.50 * ZPEscalingFactor ) / ( n + 0.50 ) * omega ;
     printf("\nNormalization factor is % 12.8E ...\n" , A ) ;
@@ -191,14 +254,14 @@ double xiGenWigner( int n , double ZPEscalingFactor , double rd , double omega ,
 }
 
 
-double xidotGenWigner( int n , double ZPEscalingFactor , double rd , double omega , double A , double * angle )
+double xidotGenWigner( int n , double ZPEscalingFactor , double rd , double omega , double A , double * angle , int level_cutoff )
 {
   double xidot ;
   double angle_local ;
   double p = rd / (double) IM ;
   double scaledOmega = 0.00 ;
   
-  if( n <= 2 )
+  if( n <= level_cutoff )
   {
     scaledOmega = ( n + 0.50 * ZPEscalingFactor ) / ( n + 0.50 ) * omega ;
     xidot = wignerVelocity( n , p , scaledOmega , sqrt( A ) ) ;
@@ -283,6 +346,7 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
             double nquanta , double irfront , double irtail , int asinitial , int asfinal , 
             double T , double ZPEscalingFactor , double * mass , double * vibfreq, 
             double * cart_q0, double * U , double * cart_q,  double * cart_p , 
+            int wignerCutoff , int typeWignerCutoff , 
             double * wignerPositionNormArray , double * wignerVelocityNormArray , 
             double * canonicalPositionNormArray , double * canonicalVelocityNormArray ,
             int debuggingMode )
@@ -313,7 +377,9 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
   
   int * irmodelist ;
   
-  long seedacurr , seedncurr ;
+  long seedacurr , seedacurr2 , seedncurr ;
+  
+  
   
   double level;
   
@@ -375,27 +441,7 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
   
 
   
-  if( debuggingMode == YES )
-  {
-    debug = fopen( "wignerPositionNormArray.deb" , "wb+" );
-
-    doutput( debug , nmodeselect , 3 , wignerPositionNormArray );
-
-    fclose( debug );
   
-  
-  
-    debug = fopen( "wignerVelocityNormArray.deb" , "wb+" );
-
-    doutput( debug , nmodeselect , 3 , wignerVelocityNormArray );
-
-    fclose( debug );
-
-
-  }
-  
-    
-      
   
   /*
   if( debuggingMode == YES )
@@ -487,12 +533,18 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
   
   
   double rdcurr = 0.00 ;
+  double rdcurr2 = 0.00 ;
   double scaledOmega = 0.00 ;
+  double A_xi, A_xidot ;
+  
+  
   //for ( imode = asfinal - 1 ; imode > asinitial - 2 ; imode -- ) // asinitial and asfinal are in Human Labelling ...
   for ( imode = asinitial - 1 ; imode < asfinal ; imode ++ ) // asinitial and asfinal are in Human Labelling ...
   //for( imode = 0 ; imode < nmodeselect ; imode ++ )
   {
     //fprintf( debug, "\n\t\t\tWorking on Mode# %d\t......\n", imode + 1 );
+    
+    A_xi = 0.00 ; A_xidot = 0.00 ;
     
     printf( "\n\t\t\tWorking on Mode# %d\t......\n", imode + 1 );
     
@@ -514,7 +566,8 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
       
         //printf("\nNORMAL MODE # %d ... \n" , imode );
       
-        seedacurr = *( seeda + imode ); 
+        seedacurr = *( seeda + imode * 2 + 0 ); 
+        seedacurr2 = *( seeda + imode * 2 + 1 ); 
         
         //printf("\nNow seed.theta.current is %ld ... ", seedacurr );
         
@@ -541,6 +594,7 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         // --------  Generating phase angle -------- //
         
         rdcurr = (double) ranzm( &seedacurr ) ;
+        rdcurr2 = (double) ranzm( &seedacurr2 ) ;
         //angle = rdcurr / (double) IM * 2.000 * PI ;
         //angle = -1.00 * PI ;
         
@@ -559,9 +613,40 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         
           //xidotcurr = sqrt( 2.000 * level + 1.000 * ZPEscalingFactor ) * sqrt( *( vibfreq + imode ) ) * sin(angle);
           ilevel = (int)level ;
-          printf("\nNormalization factor is % 10.8E and % 10.8E ...\n\n" , *( wignerPositionNormArray + 3 * imode + ilevel ) , *( wignerVelocityNormArray + 3 * imode + ilevel ) ) ;
-          xicurr = xiGenWigner( level , ZPEscalingFactor , rdcurr , *( vibfreq + imode ) , *( wignerPositionNormArray + 3 * imode + ilevel ) , &angle ) ;
-          xidotcurr = xidotGenWigner( level , ZPEscalingFactor , rdcurr , *( vibfreq + imode ) , *( wignerVelocityNormArray + 3 * imode + ilevel ) , &angle ) ;
+          
+          if(*( wignerPositionNormArray + (wignerCutoff+1) * imode + ilevel ) != 0.0 )
+          {
+            printf("\nPosition Normalization factor EXISTS for this mode at %d level ...\n", ilevel);
+            A_xi = *( wignerPositionNormArray + (wignerCutoff+1) * imode + ilevel ) ;
+            printf("\n% 12.8E\n", A_xi);
+          }
+          else
+          {
+            printf("\nNeed to calculation Position Normalization factor for this mode at %d level ...\n", ilevel);
+            A_xi = wignerPositionNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ;
+            *( wignerPositionNormArray + (wignerCutoff+1) * imode + ilevel ) = A_xi ;
+            printf("\n% 12.8E\n", A_xi);
+          }
+          
+          if(*( wignerVelocityNormArray + (wignerCutoff+1) * imode + ilevel ) != 0.0 )
+          {
+            printf("\nVelocity Normalization factor EXISTS for this mode at %d level ...\n", ilevel);
+            A_xidot = *( wignerVelocityNormArray + (wignerCutoff+1) * imode + ilevel ) ;
+            printf("\n% 12.8E\n", A_xidot);
+          }
+          else
+          {
+            printf("\nNeed to calculation Velocity Normalization factor for this mode at %d level ...\n", ilevel);
+            A_xidot = wignerVelocityNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ;
+            *( wignerVelocityNormArray + (wignerCutoff+1) * imode + ilevel ) = A_xidot ;
+            printf("\n% 12.8E\n", A_xidot);
+          }
+          
+          
+          
+          printf("\nNormalization factor is % 12.8E and % 12.8E ...\n\n" , A_xi, A_xidot) ;
+          xicurr = xiGenWigner( level , ZPEscalingFactor , rdcurr , *( vibfreq + imode ) , A_xi, &angle , wignerCutoff ) ;
+          xidotcurr = xidotGenWigner( level , ZPEscalingFactor , rdcurr2 , *( vibfreq + imode ) , A_xidot , &angle , wignerCutoff ) ;
           scaledOmega = ( level + 0.5 * ZPEscalingFactor ) / ( level + 0.5 ) * ( *( vibfreq + imode ) ) ;
           *( kineticEnergy + imode  ) = 0.50000 * xidotcurr * xidotcurr ;
           *( potentialEnergy + imode  ) = 0.50000 * xicurr * xicurr * ( scaledOmega * scaledOmega ) ;
@@ -596,7 +681,8 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
     
         // --------  Updating the seeds --------//
        
-        *( seeda + imode ) = seedacurr ; 
+        *( seeda + imode * 2 + 0 ) = seedacurr ; 
+        *( seeda + imode * 2 + 1 ) = seedacurr2 ; 
       
         //printf("\nAfter update seed.theta[%d] is %d\n", imode, seedacurr);
     
@@ -625,7 +711,8 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         
         //printf("\nNORMAL MODE # %d ... \n" , imode );
     
-        seedacurr = *( seeda + imode ); 
+        seedacurr = *( seeda + imode * 2 + 0 ); 
+        seedacurr2 = *( seeda + imode * 2 + 1 ); 
         //printf("\nNow seed.theta.current is %ld ... ", seedacurr);
        
         seedncurr = *( seedn + imode ); 
@@ -633,6 +720,7 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
     
         
         rdcurr = (double) ranzm( &seedacurr ) ;
+        rdcurr2 = (double) ranzm( &seedacurr2 ) ;
         
         
         // --------  Generating energy level location -------- //
@@ -678,7 +766,8 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
     
         /* --------  Updating the seeds --------*/
        
-        *( seeda + imode ) = seedacurr ; 
+        *( seeda + imode * 2 + 0 ) = seedacurr ; 
+        *( seeda + imode * 2 + 1 ) = seedacurr2 ; 
     
         //printf("\nAfter update seed.theta[%d] is %d\n", imode, seedacurr);
     
@@ -715,7 +804,9 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         
         //printf("\nNORMAL MODE # %d ... \n" , imode );
     
-        seedacurr = *( seeda + imode ); 
+        seedacurr = *( seeda + imode * 2 + 0 ); 
+        seedacurr2 = *( seeda + imode * 2 + 1 ); 
+        
         //printf("\nNow seed.theta.current is %ld ... ", seedacurr);
        
         seedncurr = *( seedn + imode ); 
@@ -735,8 +826,19 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         level = dropball( locator , *( vibfreq + imode ) , T );
   
         //==============> 02/03/2016 For nquanta > 2 , reset it to be 2 <============= //
+        //==============> 12/12/2016 Added option to choose when n>cutoff what happen <==//
 	
-		level = ( level > 2.00 ) ? 2.00 : level ;
+	    if( typeWignerCutoff == 0 )
+	    {	    
+	      if(level > wignerCutoff) {
+	        printf("\nPushed back to %d ...\n", wignerCutoff);
+	      }
+	      
+	      level = ( level > wignerCutoff ) ? wignerCutoff : level ;
+	    }
+	    
+	    
+	    
         
 	//==============> <===========================================> <============= //
     
@@ -751,6 +853,7 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         // --------  Generating phase angle -------- //
         
         rdcurr = (double) ranzm( &seedacurr ) ;
+        rdcurr2 = (double) ranzm( &seedacurr2 ) ;
         
         //angle = (double) ranzm( &seedacurr ) / (double) IM * 2.000 * PI ;
     
@@ -770,11 +873,40 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         
           //xidotcurr = sqrt( 2.000 * level + 1.000 * ZPEscalingFactor ) * sqrt( *( vibfreq + imode ) ) * sin(angle);
           ilevel = (int)level ;
-          xicurr = xiGenWigner( level , ZPEscalingFactor , rdcurr , *( vibfreq + imode ) , *( wignerPositionNormArray + 3 * imode + ilevel ) , &angle ) ;
-          xidotcurr = xidotGenWigner( level , ZPEscalingFactor , rdcurr , *( vibfreq + imode ) , *( wignerVelocityNormArray + 3 * imode + ilevel ) , &angle ) ;
+          
+          if(*( wignerPositionNormArray + (wignerCutoff+1) * imode + ilevel ) != 0.0 )
+          {
+            printf("\nPosition Normalization factor EXISTS for this mode at %d level ...\n", ilevel);
+            A_xi = *( wignerPositionNormArray + (wignerCutoff+1) * imode + ilevel ) ;
+          }
+          else
+          {
+            printf("\nNeed to calculation Position Normalization factor for this mode at %d level ...\n", ilevel);
+            A_xi = wignerPositionNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ;
+            *( wignerPositionNormArray + (wignerCutoff+1) * imode + ilevel ) = A_xi ;
+          }
+          
+          if(*( wignerVelocityNormArray + (wignerCutoff+1) * imode + ilevel ) != 0.0 )
+          {
+            printf("\nVelocity Normalization factor EXISTS for this mode at %d level ...\n", ilevel);
+            A_xidot = *( wignerVelocityNormArray + (wignerCutoff+1) * imode + ilevel ) ;
+          }
+          else
+          {
+            printf("\nNeed to calculation Velocity Normalization factor for this mode at %d level ...\n", ilevel);
+            A_xidot = wignerVelocityNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ;
+            *( wignerVelocityNormArray + (wignerCutoff+1) * imode + ilevel ) = A_xidot ;
+          }
+          
+          
+          
+          printf("\nNormalization factor is % 10.8E and % 10.8E ...\n\n" , A_xi, A_xidot) ;
+          xicurr = xiGenWigner( level , ZPEscalingFactor , rdcurr , *( vibfreq + imode ) , A_xi, &angle , wignerCutoff ) ;
+          xidotcurr = xidotGenWigner( level , ZPEscalingFactor , rdcurr2 , *( vibfreq + imode ) , A_xidot , &angle , wignerCutoff ) ;
           scaledOmega = ( level + 0.5 * ZPEscalingFactor ) / ( level + 0.5 ) * ( *( vibfreq + imode ) ) ;
           *( kineticEnergy + imode  ) = 0.50000 * xidotcurr * xidotcurr ;
           *( potentialEnergy + imode  ) = 0.50000 * xicurr * xicurr * ( scaledOmega * scaledOmega ) ;
+
 
         
         }
@@ -807,7 +939,8 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
     
         /* --------  Updating the seeds --------*/
        
-        *( seeda + imode ) = seedacurr ;   
+        *( seeda + imode * 2 + 0 ) = seedacurr ;   
+        *( seeda + imode * 2 + 1 ) = seedacurr2 ;  
     
         //printf("\nAfter update seed.theta[%d] is %d\n", imode, seedacurr);
     
@@ -826,8 +959,8 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
         /*#4*///fprintf(debug, "\nGood till here...\n");
         
         
-        //printf("\nCurrent energy is %lf with vibration frequency % 10.8E ...\n\n", 
-        //      ( *( vibfreq + imode ) ) * ( level + 0.5000 ) , *(vibfreq + imode));
+        printf("\nCurrent energy is %lf with vibration frequency % 10.8E ...\n\n", 
+              ( *( vibfreq + imode ) ) * ( level + 0.5000 ) , *(vibfreq + imode));
         
        /* --------  And ... what else ? --------*/
 
@@ -988,6 +1121,7 @@ void icgen( int natomselect , int * irstatus_list , long * seeda , long * seedn 
     doutput(debug, 1 , nmodeselect , levelassgn );
     
     fclose(debug);
+    
 
   }
 

@@ -89,57 +89,6 @@ double gaussianDistribution( double sigma , double mu , double x )
 
 */
  
-double wignerPositionNormalize( int n , double w , double ZPEscalingFactor )
-{
-  double scaledOmega = ( n + 0.50 * ZPEscalingFactor ) / ( n + 0.50 ) * w ;
-  double leftCutOff = -1.00 * sqrt( ( 2.0 * n + 1.00 ) / scaledOmega );
-  int nstepOneSide = 1200 ;
-  int nsteps = 2 * nstepOneSide ;
-  double stepsize = -1.00 * leftCutOff / nstepOneSide ;
-  
-  int istep = 0 ;
-  double accumulatedP = 0.00 ;
-  double wavefunc = 0.00 ;
-  
-  //double scaledOmega = w ;
-  
-  for( istep = 0 ; istep < nsteps ; istep ++ )
-  {
-    wavefunc = hcPsi( n , ( leftCutOff + stepsize * istep ) * sqrt( scaledOmega ) , scaledOmega , 1.00 ) ;
-    accumulatedP = accumulatedP + stepsize * wavefunc * wavefunc ;
-    //printf("\n% 12.8f * % 12.8f * % 12.8f = % 12.8f\n" , stepsize , wavefunc , wavefunc , stepsize * wavefunc * wavefunc ) ;
-  }
-  
-  return( 1.00 / accumulatedP ) ;
-
-}
-
-double wignerVelocityNormalize( int n , double w , double ZPEscalingFactor )
-{
-  double scaledOmega = ( n + 0.50 * ZPEscalingFactor ) / ( n + 0.50 ) * w ;
-  double leftCutOff = -1.00 * sqrt( ( 2.0 * n + 1.0 ) * scaledOmega ) ;
-  int nstepOneSide = 400 ;
-  int nsteps = 2 * nstepOneSide ;
-  double stepsize = -1.00 * leftCutOff / nstepOneSide ;
-  
-  
-  int istep = 0 ;
-  double accumulatedP = 0.00 ;
-  double wavefunc = 0.00 ;
-  
-  //double scaledOmega = w ;
-  
-  for( istep = 0 ; istep < nsteps ; istep ++ )
-  {
-    wavefunc = hcPsi( n , ( leftCutOff + stepsize * istep ) / sqrt( scaledOmega ) , scaledOmega , 1.00 ) ;
-    accumulatedP = accumulatedP + stepsize * wavefunc * wavefunc ;
-  }
-  
-  return( 1.00 / accumulatedP ) ;
-
-}
-
-
 
 
 double canonicalPositionNormalize( int n , double w , double ZPEscalingFactor , double T )
@@ -217,6 +166,7 @@ int main( int argc, char * argv[] )
             double nquanta , double irfront , double irtail , int asinitial , int asfinal , 
             double T , double ZPEscalingFactor , double * mass , double * vibfreq, 
             double * cart_q0, double * U , double * cart_q,  double * cart_p , 
+            int wignerCutoff , int typeWignerCutoff , 
             double * wignerPositionNormArray , double * wignerVelocityNormArray , 
             double * canonicalPositionNormArray , double * canonicalVelocityNormArray ,
             int debuggingMode ) ;
@@ -241,7 +191,7 @@ int main( int argc, char * argv[] )
 
   // =====> Declaring variables ... 
 
-  int max_cmd_args = 40 ;
+  int max_cmd_args = 180 ;
 
   if( argc > max_cmd_args )
   {
@@ -306,6 +256,8 @@ int main( int argc, char * argv[] )
   
   int exas , exoutatom ;
   
+  int exWignerCutoff ; int typeWignerCutoff = 0;
+  
   int exPhaseAngle ; int opPhaseAngle = YES ;
   
   int debuggingMode = NO ;
@@ -338,7 +290,7 @@ int main( int argc, char * argv[] )
 
   char irmodelistfilename[ MAXCHARINLINE ];
   
-  char activemodelistfilename[ MAXCHARINLINE ] ;
+  char activeSpaceListFileName[ MAXCHARINLINE ] ;
   
   double irfront , irtail ;
   
@@ -347,6 +299,8 @@ int main( int argc, char * argv[] )
   int softrange ;
 
   double * cart_q, * cart_p, * cart_q0;
+  
+  int wignerCutoff = 2 ;
 
 
   int itmp , iatom , icart , imode , itraj ; 
@@ -407,7 +361,7 @@ int main( int argc, char * argv[] )
   
   exgro = 18 ; exdxdr = 20 ; exfreq = 22 ; exmass = 24 ; exselect = 26 , exhess = 28 ;
   
-  exas = 32 ; exoutatom = 66 ;
+  exas = 32 ; exoutatom = 66 ; exWignerCutoff = 72 ;
 
   if( argc == 1 )
   {
@@ -676,33 +630,27 @@ int main( int argc, char * argv[] )
 	                 }
 	                 else if( *( cache + 0 ) == '-' || icmd > argc || *( cache + 0 ) > '9' || *( cache + 0 ) < '0' )
 	                 {
-	                   if( asinitial != -3 )
-	                   {
-	                     //asfinal = atoi( cache ) ;
-	                     //exas = 33 ;
-	                     //printf("\nCommand-line argument indicates : Active Normal Mode Space is between [ # %d ] and [ # %d ] \n" , asinitial , asfinal );
+	                   printf("\nError : Command Line Error. Both \"Starting-From\" and \"End-At\" normal mode sequence number need to be provided!!!\n\n");
 	                   
-	                     printf("\nError : Command Line Error. Both \"Starting-From\" and \"End-At\" normal mode sequence number need to be provided!!!\n\n");
-	                     
-	                     exit( 125 ) ;
-	                   }
-	                   else
-	                   {
-	                     strcpy( activemodelistfilename , cache );
-	                     
-	                     asfinal = -3 ;
-	                   }
-
+	                   exit( 125 ) ;
 	                 }
 	                 else
 	                 {
-	                   asfinal = atoi( cache ) ;
+	                   if( asinitial != -3 )
+	                   {
+	                     asfinal = atoi( cache ) ;
 	                   
-	                   exas = 33 ;
+	                     exas = 33 ;
 	                   
-	                   printf("\nCommand-line argument indicates : Active Normal Mode Space is between [ # %d ] and [ # %d ] \n" , asinitial , asfinal );
+	                     printf("\nCommand-line argument indicates : Active Normal Mode Space is between [ # %d ] and [ # %d ] \n" , asinitial , asfinal );
+	                   }
+	                   else
+	                   {
+	                     strcpy( activeSpaceListFileName , cache );
+	                   }
+	                   
+	                   
 	                 }
-	                 
 	                 
 	                 
 	                 if( asinitial == -2 && asfinal != -2 )
@@ -720,8 +668,6 @@ int main( int argc, char * argv[] )
 	                 else if( asinitial == -3 && asfinal == -3 )
 	                 {
 	                   exas = 46 ;
-	                   
-	                   printf("\nActive space will be specified by file %s ...\n\n" , activemodelistfilename ) ;
 	                 }
 	                 else
 	                 {
@@ -750,6 +696,52 @@ int main( int argc, char * argv[] )
 	                 
 	                 break ;
 	     
+	     case 'W' :  wignerCutoff = atoi( *( ++ pcmd ) ) ;
+	      
+	                 printf("\nCommand-line argument indicates : Vibrational level below %d will be using Wigner sampling ... \n" , wignerCutoff ); 
+	                 
+	                 exWignerCutoff = exWignerCutoff + 1 ; 
+	                 
+	                 strcpy( tmpString , *( ++ pcmd ) );
+	                 
+	                 if( * tmpString == '-' )
+	                 {
+	                   pcmd -- ;
+	                   
+	                   printf("And it will be truncated at %d ...", wignerCutoff);
+	                   
+	                   typeWignerCutoff = 0 ; // Trunc cutoff, default if no flag specified
+	                   
+	                   icmd = icmd + 2 ;
+	                   
+	                 }
+	                 else if( strcmp( tmpString , "trunc" ) == 0 || strcmp( tmpString , "TRUNC" ) == 0 || strcmp( tmpString , "Trunc" ) == 0 )
+	                 {
+	                   printf("And it will be truncated at %d ...", wignerCutoff);
+	                   
+	                   typeWignerCutoff = 0 ;
+	                   
+	                   icmd = icmd + 3 ;
+	                 }
+	                 else if( strcmp( tmpString , "aa" ) == 0 || strcmp( tmpString , "AA" ) == 0 || strcmp( tmpString , "Aa" ) == 0 )
+	                 {
+	                   printf("And when level goes over %d, action-angle happens ...", wignerCutoff);
+	                   
+	                   typeWignerCutoff = 1 ;
+	                   
+	                   icmd = icmd + 3 ;
+	                 }
+	                 /*
+	                 else if( strcmp( tmpString , "canonical" ) == 0 || strcmp( tmpString , "CANONICAL" ) == 0 || strcmp( tmpString , "Canonical" ) == 0 )
+	                 {
+	                   typeWignerCutoff = 2 ;
+	                   
+	                   icmd = icmd + 3 ;
+	                 }
+	                 */
+	                 
+
+	                 break ;
 	     
 	      case 'a' : strcpy( tmpString , *( ++ pcmd ) );
 	      
@@ -882,6 +874,7 @@ int main( int argc, char * argv[] )
 	              [ -N 'Output file name prefix'] [ -H 'Hessian file name' ' unit : au or gmx' ] [ -T Simulation temperature ] [ -z Scaling Factor of ZPE ] [ -t # of Trajectory ] \n\
 	              [ -s # of atom selected ] [ -x # of atom selected for output ] [ -q to which level IR excite active modes to ]\n\
 	              [ -i ir-excitation range ( See Explanation below ) ] [ -R random seed type ( 9 for fixed number , 11 for time_NULL )] [ -r initial and final mode # of active space ]\n\
+	              [ -W level cutoff for Wigner sampling, default is 2 ] [ -S starting frame, only about naming the files ]\n \
 	              [ -a option for whether sample the phase angle. Use floating number to specify the fixed phase angle. ][ -g debugging mode ]\n\n" , * argv ); 
 	                 
 	                 printf("\nFor -i flag, available input format are : \n\t(1) Two floating number seperated by space key to indicate IR range front and tail ...\n");
@@ -892,13 +885,13 @@ int main( int argc, char * argv[] )
 	                 
 	                 printf("\nFor -r flag , \"ir\" \"ir\" will cause the active space to include only ir-Excited modes ...\n\n" ) ;
 	                 
-	                 printf("\nFor -r flag , \"list\" \"[ active list file name ]\" will cause the active space to be specified by a stand-along file ...\n\n" ) ;
-	                 
 	                 printf("\nFor -s flag, \"All\" or \"ALL\" or \"all\" will select all available atoms. Default value is also choosing all available atoms ...\n\n") ;
 	                 
 	                 printf("\nFor -x flag, \"All\" or \"ALL\" or \"all\" will select all available atoms for output. Default value is also choosing all atoms which were selected for NEqIC generation ...\n\n") ;
 	      
 	                 printf("\nFor -a flag, YES/Yes/yes will cause the phase-angle sampling to be performed (default); NO/No/no will cause the phase-angle to be fixed at 0.25, meaning Ep=Ek; Floating number can be used to specify the partition. \ne.g. \"0.3\" being specified will make the fixed phase angle 0.3*pi ...\n\n") ;
+	                 
+	                 printf("\nFor -W flag, besides the integer specifying cutoff level, aa/trunc could be used to specify the type of cutoff. Default is trunc ...\n\n") ;
 	                 
 	                 
 	                 
@@ -1394,7 +1387,7 @@ int main( int argc, char * argv[] )
               
               break ;
               
-    case 46 : printf( "\nPer user's request, active space is specified by list file [ %s ] ...\n" , activemodelistfilename ) ;
+    case 46 : printf( "\nPer user's request, active space is specified by list file [ %s ] ...\n" , activeSpaceListFileName ) ;
     
               break ;
               
@@ -2053,21 +2046,25 @@ int main( int argc, char * argv[] )
 
   long * seeda, * seedn ;
 
-  seeda = calloc( nmodeselect , sizeof( long ) ); 
+  seeda = calloc( nmodeselect * 2 , sizeof( long ) ); 
 
   seedn = calloc( nmodeselect , sizeof( long ) ); 
 
-  pid_t pid ;
+  pid_t pid , ppid;
   
   pid = getpid() ;
   
-  long tmp_seeda , tmp_seedn ;
+  ppid = getppid();
+  
+  long tmp_seeda , tmp_seeda_2, tmp_seedn ;
   
   if( randomtype == 9 )
   {
     for( imode = 0 ; imode < nmodeselect ; imode ++ )
     {
-      *( seeda + imode ) = 19880708 + imode * 99999 ; 
+      *( seeda + imode * 2 + 0 ) = 19880708 + imode * 99999 ; 
+      
+      *( seeda + imode * 2 + 1 ) = 19871205 + imode * 66666 ; 
     
       * (seedn + imode ) = 19880123 + ( nmodeselect - imode ) * 99999 ; 
     }
@@ -2077,11 +2074,15 @@ int main( int argc, char * argv[] )
   {
     tmp_seeda = time( NULL ) + pid ;
     
+    tmp_seeda_2 = time( NULL ) + ppid ;
+    
     tmp_seedn = 11 * pid ;
     
     for( imode = 0 ; imode < nmodeselect ; imode ++ )
     {
-      *( seeda + imode ) = ranzm( &tmp_seeda );
+      *( seeda + imode * 2 + 0 ) = ranzm( &tmp_seeda );
+      
+      *( seeda + imode * 2 + 1 ) = ranzm( &tmp_seeda_2 );
       
       *( seedn + imode ) = ranzm( &tmp_seedn );
       
@@ -2094,13 +2095,17 @@ int main( int argc, char * argv[] )
     
     tmp_seeda = randomseed ;
     
+    tmp_seeda_2 = randomseed ;
+    
     tmp_seedn = ranzm( &tmp_seeda ) ;
     
     tmp_seeda = randomseed ;
     
     for( imode = 0 ; imode < nmodeselect ; imode ++ )
     {
-      *( seeda + imode ) = ranzm( &tmp_seeda );
+      *( seeda + imode * 2 + 0 ) = ranzm( &tmp_seeda );
+      
+      *( seeda + imode * 2 + 1 ) = ranzm( &tmp_seeda_2 );
       
       *( seedn + imode ) = ranzm( &tmp_seedn );
       
@@ -2123,7 +2128,7 @@ int main( int argc, char * argv[] )
   {
     debug = fopen( "seed.theta.0.deb" , "wb+" );
   
-    loutput( debug , nmodeselect , 1 , seeda );
+    loutput( debug , nmodeselect , 2 , seeda );
   
     fclose( debug );
   
@@ -2203,8 +2208,6 @@ int main( int argc, char * argv[] )
  
   int * irstatus_list = calloc( nmodeselect , sizeof( int ) );
   
-  izeros( nmodeselect , 1 , irstatus_list ) ;
-  
   int irstatus ;
   
   int firstIRMode = -1 , lastIRMode = -1 ;
@@ -2254,16 +2257,6 @@ int main( int argc, char * argv[] )
     
   }
   
-  
-  int * activemodelist ;
-  
-  int NofActiveModes = 0 ;
-  
-  FILE * pactivemodelistfile ; 
-  
-  
-  
-  
   switch( exas )
   {
     case 37 : asinitial = firstIRMode ;
@@ -2294,57 +2287,6 @@ int main( int argc, char * argv[] )
     
               break ;
               
-    case 46 : if( ( pactivemodelistfile = fopen( activemodelistfilename , "r" ) ) == NULL )
-  	          {
-  	            printf("\nUser specified Active Mode List not found ... Mission Aborting ... \n") ;
-  	                     
-  	            exit( 57 );
-  	       
-  	          }
-  	       
-  	          NofActiveModes = flength( pactivemodelistfile );
-  	       
-  	          if( NofActiveModes != 0 )
-  	          {
-  	            rewind( pactivemodelistfile );
-  	        
-  	            activemodelist = calloc( NofActiveModes , sizeof( int ) );
-  	       
-  	            int_fload( pactivemodelistfile , activemodelist );
-  	       
-  	            printf("\nAccording to user-provided file there are %d mode(s) which will be included in Active Space ...\n" , NofActiveModes );
-  	       
-  	            printf("\nThey are ... : \n");
-  	       
-  	            for( itmp = 0 ; itmp < NofActiveModes ; itmp ++ )
-  	            {
-  	              printf("\nMode # %d ...\n" , *( activemodelist + itmp ) );
-  	            }
-  	          
-  	          } 
-  	          else
-  	          {
-  	            printf("\nAlllll right ... The ir-excitation list you provided is empty ...  so I assume all modes are Active ...\n");
-  	         
-  	            printf("\nPlease make sure this is correct ... Proceeding now ...\n");
-  	            
-  	            NofActiveModes = nmodeselect ;
-  	            
-  	            activemodelist = calloc( NofActiveModes , sizeof( int ) );
-  	            
-  	            for( itmp = 0 ; itmp < nmodeselect ; itmp ++ )
-  	            {
-  	              *( activemodelist + itmp ) = itmp + 1 ;
-  	            }
-  	       
-  	          }
-  	          
-  	          asinitial = imin( NofActiveModes , activemodelist ) ;
-  	          
-  	          asfinal = imax( NofActiveModes , activemodelist ) ;
-  	       
-  	          break ;
-              
     
     default :  printf("\nUNKOWN Error : Active Space Flag Corrupted ... \n");
     
@@ -2358,22 +2300,17 @@ int main( int argc, char * argv[] )
   {
     irstatus = *( irstatus_list + imode ) ;
     
-    if( exas == 46 ) 
+    if( exas != 39 ) 
     {
-      irstatus = tellActive_list( imode + 1 , activemodelist , NofActiveModes );
-      
-    }
-    else if( exas == 39 )
-    {
-      if( irstatus != 1 )
+      if( imode + 1 > asfinal || imode + 1 < asinitial )
       {
         irstatus = -1 ;
       }
     
     }
-    else
+    else if( exas == 39 )
     {
-      if( imode + 1 > asfinal || imode + 1 < asinitial )
+      if( irstatus != 1 )
       {
         irstatus = -1 ;
       }
@@ -2388,17 +2325,6 @@ int main( int argc, char * argv[] )
   
   
 
-
-  
-  //icgen( natomselect , ntraj , randomtype , excitationType , irmodelistfilename , nquanta , irfront , irtail , asinitial , asfinal , T , ZPEscalingFactor , mass , vibfreq , cart_q0 , vibdxdr , cart_q , cart_p );
-     
-  /*
-  void icgen( int natomselect , int ntraj , 
-              int excitationType , char irmodelistfilename[] , 
-              double irfront , double irtail , double softrange , 
-              double T , double * mass , double * vibfreq, double * cart_q0,
-              double * U ,   double * cart_q,  double * cart_p)
-  */
   
   // ======> Adjusting the units ... from ( Bohr , au_time ) to ( nm , ps )
   
@@ -2417,23 +2343,55 @@ int main( int argc, char * argv[] )
   
   double * wignerPositionNormArray , * wignerVelocityNormArray ;
   
+  FILE * p_wignerPositionNormArray, * p_wignerVelocityNormArray ;
+  
   int ilevel ;
     
   if( fixedPhaseAngle == 9.00 )
   {
-    wignerPositionNormArray = calloc( nmodeselect * 3 , sizeof( double ) ) ; dzeros( nmodeselect , 3 , wignerPositionNormArray ) ; 
+  
+    printf("\n===> Starting Wigner Normalization Factor Preparation ... <===\n\n");
+  
+    wignerPositionNormArray = calloc( nmodeselect * ( wignerCutoff + 1 ) , sizeof( double ) ) ; 
+    wignerVelocityNormArray = calloc( nmodeselect * ( wignerCutoff + 1 ) , sizeof( double ) ) ; 
     
-    wignerVelocityNormArray = calloc( nmodeselect * 3 , sizeof( double ) ) ; dzeros( nmodeselect , 3 , wignerVelocityNormArray ) ; 
     
+    if( ( p_wignerPositionNormArray = fopen( "wigner.position.normalize.factor" , "r" ) ) != NULL )
+    {
+      fload( p_wignerPositionNormArray , wignerPositionNormArray ) ;  
+    }
+    else
+    {
+      dzeros( nmodeselect , ( wignerCutoff + 1 ) , wignerPositionNormArray ) ; 
+    }
+    
+    if( ( p_wignerVelocityNormArray = fopen( "wigner.velocity.normalize.factor" , "r" ) ) != NULL )
+    {
+      fload( p_wignerVelocityNormArray , wignerVelocityNormArray ) ;    
+    }
+    else
+    {
+      dzeros( nmodeselect , ( wignerCutoff + 1 ) , wignerVelocityNormArray ) ; 
+    }
+    
+    
+    
+    
+    
+    /*
     for( imode = 0 ; imode < nmodeselect ; imode ++ )
     {
-      for( ilevel = 0 ; ilevel < 3 ; ilevel ++ )
+      printf("\n==>Mode %d <==\n", imode+1);
+      for( ilevel = 0 ; ilevel < ( wignerCutoff + 1 ) ; ilevel ++ )
         {
-          *( wignerPositionNormArray + 3 * imode + ilevel ) = wignerPositionNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ; 
-          *( wignerVelocityNormArray + 3 * imode + ilevel ) = wignerVelocityNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ; 
+          printf("\n=>Level %d<=\n", ilevel);
+          *( wignerPositionNormArray + ( wignerCutoff + 1 ) * imode + ilevel ) = wignerPositionNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ; 
+          *( wignerVelocityNormArray + ( wignerCutoff + 1 ) * imode + ilevel ) = wignerVelocityNormalize( ilevel , *( vibfreq + imode ) , ZPEscalingFactor ) ; 
+          printf("\n% 12.8E\t and % 12.8E\n", *( wignerPositionNormArray + ( wignerCutoff + 1 ) * imode + ilevel ), *( wignerVelocityNormArray + ( wignerCutoff + 1 ) * imode + ilevel ) );
         }
   
     }
+    */
   
   
     
@@ -2494,7 +2452,7 @@ int main( int argc, char * argv[] )
     dzeros( ncartselect , 1 , tmp_crd ) ; dzeros( ncartselect , 1 , tmp_vel );
     
     icgen( natomselect , irstatus_list , seeda , seedn , fixedPhaseAngle , nquanta , irfront , irtail , asinitial , asfinal , 
-           T , ZPEscalingFactor , mass , vibfreq , cart_q0 , vibdxdr , tmp_crd , tmp_vel , 
+           T , ZPEscalingFactor , mass , vibfreq , cart_q0 , vibdxdr , tmp_crd , tmp_vel , wignerCutoff , typeWignerCutoff , 
            wignerPositionNormArray , wignerVelocityNormArray , canonicalPositionNormArray , canonicalVelocityNormArray , debuggingMode );
     
     
@@ -2598,6 +2556,24 @@ int main( int argc, char * argv[] )
     doutput( debug , nmodeselect , 1 , boltenergy );
 
     fclose( debug );
+    
+    
+    
+    debug = fopen( "wignerPositionNormArray.deb" , "wb+" );
+
+    doutput( debug , nmodeselect , wignerCutoff + 1 , wignerPositionNormArray );
+
+    fclose( debug );
+  
+  
+  
+    debug = fopen( "wignerVelocityNormArray.deb" , "wb+" );
+
+    doutput( debug , nmodeselect , wignerCutoff + 1 , wignerVelocityNormArray );
+
+    fclose( debug );
+
+
 
   }
 
