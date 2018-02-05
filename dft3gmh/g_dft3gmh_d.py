@@ -196,12 +196,3 @@ gsct, lect = gmh(dipX, dipY, dipZ, energies, MO, gs, ct, le)
 
 np.savetxt(bdiagName, np.concatenate((gsct, lect)).reshape((1, len(gsct)+len(lect))), fmt='% .10E', delimiter='\t')
 
-np.savetxt('AODipX.deb', dipX , fmt='% .10E', delimiter='\t' )
-np.savetxt('AODipY.deb', dipY , fmt='% .10E', delimiter='\t' )
-np.savetxt('AODipZ.deb', dipZ , fmt='% .10E', delimiter='\t' )
-
-np.savetxt('AOMO.deb', MO , fmt='% .10E', delimiter='\t' )
-np.savetxt('MOEnergy.deb', energies , fmt='% .10E', delimiter='\n' )
-
-
-

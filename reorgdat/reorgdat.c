@@ -72,7 +72,7 @@ int main( int argc , char * argv[ ] )
   
   int icmd ;
   
-  char originalDATFileName[ MAXCHARINLINE ] , indexFileName[ MAXCHARINLINE ] , outputDATName[ MAXCHARINLINE ] ;
+  char originalDATFileName[ 300 ] , indexFileName[ 300 ] , outputDATName[ 300 ] ;
 
   int len_originalDATFileName ;
   
@@ -107,9 +107,9 @@ int main( int argc , char * argv[ ] )
   
   int itmp , itmp2 ; double dtmp ; char ctmp , tmp_char ; 
   
-  char stmp[ MAXCHARINLINE ] , stmp2[ MAXCHARINLINE ] , tmpString[ MAXCHARINLINE ];
+  char stmp[ 300 ] , stmp2[ 300 ] , tmpString[ 300 ];
   
-  double dtmpArray[ MAXCHARINLINE ] ;
+  double dtmpArray[ 300 ] ;
   
   int info , signal , blank_signal ;
   
@@ -340,8 +340,7 @@ int main( int argc , char * argv[ ] )
 	                 
                      printf("\n                Note : 1) when -s is specified as \"ALL\" or \"all\" or \"All\", all atoms input will be tried to re-organized. Default value is also \"ALL\" ...\n");
                      
-                     printf("\n                       2) when -D is specified as \"ALL\" or \"all\" or \"All\", all atoms input will be tried to dumped. Default value is the same as current ${natomsoluteSelect} ...\n");
-                     printf("\n                       3) Default group name setup : -p [ Donor-Block ] -q [ Acceptor-Block ] -r [ Bridge-Block ] -x [ Irrelevant-Block ]... ...\n\n\n");
+                     printf("\n                       2) when -D is specified as \"ALL\" or \"all\" or \"All\", all atoms input will be tried to dumped. Default value is the same as current ${natomsoluteSelect} ...\n\n\n");
 	                 
 	                 icmd = icmd + 1 ; 
 	                 

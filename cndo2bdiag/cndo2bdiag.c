@@ -3580,12 +3580,12 @@ int main( int argc , char * argv[ ] )
         *( smallOverlapFlag + ibasis ) = YES ;
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = itmp ; 
@@ -3614,12 +3614,12 @@ int main( int argc , char * argv[ ] )
         
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = homoP + itmp ; 
@@ -3646,12 +3646,12 @@ int main( int argc , char * argv[ ] )
         *( smallOverlapFlag + ibasis ) = YES ;
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + itmp ; 
@@ -3678,12 +3678,12 @@ int main( int argc , char * argv[ ] )
         
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + homoQ + itmp ; 
@@ -3711,12 +3711,12 @@ int main( int argc , char * argv[ ] )
       
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + nbasisQ + itmp ; 
@@ -3744,12 +3744,12 @@ int main( int argc , char * argv[ ] )
         
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + nbasisQ + homoR + itmp ; 
@@ -3778,12 +3778,12 @@ int main( int argc , char * argv[ ] )
       
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + nbasisQ + nbasisR + itmp ; 
@@ -3811,12 +3811,12 @@ int main( int argc , char * argv[ ] )
         
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + nbasisQ + nbasisR + homoX + itmp ; 
@@ -3845,12 +3845,12 @@ int main( int argc , char * argv[ ] )
       
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + nbasisQ + nbasisR + nbasisX + itmp ; 
@@ -3878,12 +3878,12 @@ int main( int argc , char * argv[ ] )
         
       }
       
-      /*
+      
       else
       {
         printf("\n===> Maximum overlap for Ref-MO # %d is % 10.6f @ # %d snap orbital <===\n" , ibasis + 1 , dominateOverlap , itmp + 1 ) ;
       }
-      */
+      
       
     
       *( moMapping + ibasis ) = nbasisP + nbasisQ + nbasisR + nbasisX + homoZ + itmp ; 

@@ -127,6 +127,7 @@ def gmh(approx_type, dipX, dipY, dipZ, energies, MO, gsOrbs, ctOrbs, leOrbs):
             mu11 = np.array([MODipX[gs - 1, gs - 1], MODipY[gs - 1, gs - 1], MODipZ[gs - 1, gs - 1]])
             mu22 = np.array([MODipX[ct - 1, ct - 1], MODipY[ct - 1, ct - 1], MODipZ[ct - 1, ct - 1]])
             mu12 = np.array([MODipX[gs - 1, ct - 1], MODipY[gs - 1, ct - 1], MODipZ[gs - 1, ct - 1]])
+	    print "\n{0}->{1} Transition Dipole is X: {2} , Y: {3} , Z: {4}".format(gs,ct,MODipX[gs - 1, ct - 1], MODipY[gs - 1, ct - 1], MODipZ[gs - 1, ct - 1])
             dMu = mu11 - mu22
             v0 = dMu / np.linalg.norm(dMu)
             if approx_type == 1:
@@ -152,6 +153,7 @@ def gmh(approx_type, dipX, dipY, dipZ, energies, MO, gsOrbs, ctOrbs, leOrbs):
             mu11 = np.array([MODipX[le - 1, le - 1], MODipY[le - 1, le - 1], MODipZ[le - 1, le - 1]])
             mu22 = np.array([MODipX[ct - 1, ct - 1], MODipY[ct - 1, ct - 1], MODipZ[ct - 1, ct - 1]])
             mu12 = np.array([MODipX[le - 1, ct - 1], MODipY[le - 1, ct - 1], MODipZ[le - 1, ct - 1]])
+	    print "\n{0}->{1} Transition Dipole is X: {2} , Y: {3} , Z: {4}".format(le,ct,MODipX[le - 1, ct - 1], MODipY[le - 1, ct - 1], MODipZ[le - 1, ct - 1])
             dMu = mu11 - mu22
             v0 = dMu / np.linalg.norm(dMu)
             if approx_type == 1:
@@ -171,7 +173,7 @@ def gmh(approx_type, dipX, dipY, dipZ, energies, MO, gsOrbs, ctOrbs, leOrbs):
 # main function
 
 usage = os.path.basename(__file__) + ": [ rwf-dipole File Name ] [ rwf-MO File Name ] [ Orbital Energy File ] " \
-                                     "[ pyCI file name ][ (optional) coupling file Name ]"
+                                     "[ pyCI file name ][ (optional) coupling file Name ] [ optional dipole approx type]"
 
 argc = len(sys.argv)
 
@@ -193,6 +195,7 @@ elif argc == 5 and sys.argv[1] != "-h":
     energyName = sys.argv[3]
     pyCIName = sys.argv[4]
     bdiagName = moName[: -3] + 'bdiag'
+    dip_approx_type = 2
 
 
 elif argc == 6 and sys.argv[1] != "-h":
@@ -201,6 +204,15 @@ elif argc == 6 and sys.argv[1] != "-h":
     energyName = sys.argv[3]
     pyCIName = sys.argv[4]
     bdiagName = sys.argv[5]
+    dip_approx_type = 2
+
+elif argc == 7 and sys.argv[1] != "-h":
+    dipName = sys.argv[1]
+    moName = sys.argv[2]
+    energyName = sys.argv[3]
+    pyCIName = sys.argv[4]
+    bdiagName = sys.argv[5]
+    dip_approx_type = int(sys.argv[6])
 
 else:
     print("\nExecution Error! Please refere to \"%s -h\"" % os.path.basename(__file__))
@@ -224,7 +236,7 @@ print "\ngs = [ {0} ]\t;\tct = [ {1} ]\t;\tle = [ {2} ]\n".format(gs, ct, le)
 
 # gs, ct, le = readpyci(pyCIName)
 
-gsct, lect = gmh(2, dipX, dipY, dipZ, energies, MO, gs, ct, le)
+gsct, lect = gmh(dip_approx_type, dipX, dipY, dipZ, energies, MO, gs, ct, le)
 
 couplings = np.concatenate((gsct[:,0], lect[:,0]))
 
@@ -246,9 +258,9 @@ MODipX = (MO.T).dot(dipX).dot(MO)
 MODipY = (MO.T).dot(dipY).dot(MO)
 MODipZ = (MO.T).dot(dipZ).dot(MO)
 
-np.savetxt('MODipX.deb', MODipX, fmt='% .10E', delimiter='\t' )
-np.savetxt('MODipY.deb', MODipY, fmt='% .10E', delimiter='\t' )
-np.savetxt('MODipZ.deb', MODipZ, fmt='% .10E', delimiter='\t' )
+# np.savetxt('MODipX.deb', MODipX, fmt='% .10E', delimiter='\t' )
+# np.savetxt('MODipY.deb', MODipY, fmt='% .10E', delimiter='\t' )
+# np.savetxt('MODipZ.deb', MODipZ, fmt='% .10E', delimiter='\t' )
 print "\nTrace of MO Dipole Matrices are:\ntr[ MODipX ] = [ {0} ]\t;\n\ntr[ MODipY ] = [ {1} ]\t;\n\ntr[ MODipZ ] = [ {2} ]\n\n".format(np.trace(MODipX), np.trace(MODipY), np.trace(MODipZ))
 
 # np.savetxt('AOMO.deb', MO , fmt='% .10E', delimiter='\t' )

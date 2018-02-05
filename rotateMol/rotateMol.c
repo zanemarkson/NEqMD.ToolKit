@@ -86,9 +86,9 @@ int main( int argc, char * argv[] )
   
   FILE * debug ;
   
-  char soluteITPName[ MAXCHARINLINE ] , indexFileName[ MAXCHARINLINE ] , eqGROFileName[ MAXCHARINLINE ] ;
+  char soluteITPName[ 500 ] , indexFileName[ 500 ] , eqGROFileName[ 500 ] ;
   
-  char outGROFileName[ MAXCHARINLINE ] ;
+  char outGROFileName[ 500 ] ;
   
   //char outCRDFileName[ 100 ] , outVELFileName[ 100 ] ;
   
@@ -118,7 +118,7 @@ int main( int argc, char * argv[] )
 
   double dtmp ; 
   
-  double dtmpArray[ 500 ] ;
+  double dtmpArray[ 150 ] ;
   
   int itmp ;
   
@@ -333,7 +333,7 @@ int main( int argc, char * argv[] )
                      break;
          
 
-	      case 'h' : printf("\nUsage:  %s [ -i 'input solute itp file name' ] [ -n 'input index file name ( GROMACS .ndx compatible )' ] [ -c 'input EqMD gro file' ] [ -o 'output GRO file' ] [ -p P Group Name ][ -q Q Group Name ][ -N atom number of L-Shape reference atom ] [-s # of atoms to be rotated ] [ -v Whether to print out velocities information ]\n\n" , * argv ); 
+	      case 'h' : printf("\nUsage:  %s [ -i 'input solute itp file name' ] [ -n 'input index file name ( GROMACS .ndx compatible )' ] [ -c 'input EqMD gro file' ][ -p P Group Name ][ -q Q Group Name ][ -N atom number of L-Shape reference atom ] [-s # of atoms to be rotated ] [ -v Whether to print out velocities information ]\n\n" , * argv ); 
 	                 
 	                 printf("\n===> NOTE : 1) For -v flag , you can choose from [ YES / Y / yes / y / 1 ] OR [ NO / N / no / n / 0 ] ... \n\n");
 	                 
